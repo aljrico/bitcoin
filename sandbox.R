@@ -3,6 +3,7 @@ require("quantmod")
 require("nortest")
 library(tidyverse)
 library(reshape2)
+library(data.table)
 source("btc-functions.R")
 
 # Fetch Data --------------------------------------------------------------
@@ -146,4 +147,32 @@ btc[,c("date","volbtc")] %>%
 	theme(text = element_text(family = 'Open Sans'),
 				axis.title = element_text(family = 'Open Sans')) +
 	scale_color_manual(values=c("#4a6978","#694a78","#59784a","#78594a"), labels = c("btc","eur","gbp","jpy")) +
+	labs(colour = "Volatility")
+
+
+
+# Google trends -----------------------------------------------------------
+
+
+gtrends <- fread("gtrends.csv") %>%
+	mutate(term = as.numeric(ifelse(term == "<1", 0.25,term))/100) %>%
+	mutate(date = as.Date(as.Date(paste(Month,"-01",sep=""))), format = "%Y-%m-%d") %>%
+	select(date,term)
+
+btc[,c("date","volbtc")] %>%
+	merge(eur[,c("date","voleur")]) %>%
+	merge(gbp[,c("date","volgbp")]) %>%
+	merge(jpy[,c("date","voljpy")]) %>%
+	merge(gtrends) %>%
+	melt(id.vars = c("date")) %>%
+	filter(date > "2014-07-01") %>%
+	ggplot(aes(x = date, colour = variable)) +
+	geom_line(aes(y = (value)),size = 1) +
+	scale_x_date(date_label ="%Y-%m-%d") +
+	xlab("") +
+	ylab("") +
+	theme_minimal() +
+	theme(text = element_text(family = 'Open Sans'),
+				axis.title = element_text(family = 'Open Sans')) +
+	scale_color_manual(values=c("#4a6978","#694a78","#59784a","#78594a","red"), labels = c("btc","eur","gbp","jpy","google_trends")) +
 	labs(colour = "Volatility")
